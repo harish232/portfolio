@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Harish Babu - Python Full Stack Developer Portfolio">
+    <meta property="og:title" content="Harish Babu | Python Full Stack Developer">
+    <meta property="og:description" content="Cyberpunk-themed 3D portfolio with AI Chatbot">
+    <title>Harish Babu | Python Full Stack Developer</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* ===== CSS VARIABLES ===== */
+        :root {
+            --neon-cyan: #00ffff;
+            --neon-pink: #ff00ff;
+            --neon-purple: #a020f0;
+            --neon-green: #39ff14;
+            --bg-dark: #0a0a0f;
+            --bg-darker: #050508;
+            --text-light: #e0e0ff;
+        }
+
+        /* ===== RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* ===== CUSTOM CURSOR ===== */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s, background 0.3s;
+            mix-blend-mode: difference;
+        }
+
+        .cursor.hover {
+            transform: scale(2);
+            background: var(--neon-cyan);
+        }
+
+        /* ===== SCANLINES OVERLAY ===== */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 255, 0.03),
+                rgba(0, 255, 255, 0.03) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        /* ===== 3D CANVAS ===== */
+        #canvas3d {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        /* ===== LOADING SCREEN ===== */
+        .loader {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg-darker);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 20px var(--neon-cyan);
+            letter-spacing: 5px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loader-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(0, 255, 255, 0.2);
+            margin-top: 20px;
+            overflow: hidden;
+            border-radius: 2px;
+        }
+
+        .loader-bar::before {
+            content: '';
+            display: block;
+            width: 30%;
+            height: 100%;
+            background: var(--neon-cyan);
+            animation: load 1.5s infinite;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        @keyframes load {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(450%); }
+        }
+
+        /* ===== NAVIGATION ===== */
+        nav {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.7);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            letter-spacing: 3px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--neon-cyan);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* ===== SECTIONS ===== */
+        section {
+            min-height: 100vh;
+            padding: 100px 50px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ===== HERO ===== */
+        #hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero-greeting {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-pink);
+            font-size: 1.2rem;
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .hero-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            line-height: 1;
+        }
+
+        .typing-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--neon-cyan);
+            margin-bottom: 30px;
+            min-height: 2rem;
+        }
+
+        .typing-text::after {
+            content: '|';
+            animation: blink 0.7s infinite;
+            color: var(--neon-cyan);
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .hero-desc {
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            color: rgba(224, 224, 255, 0.8);
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 15px 35px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-decoration: none;
+            color: var(--text-light);
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            cursor: none;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: var(--neon-cyan);
+            transition: left 0.3s;
+            z-index: -1;
+        }
+
+        .btn:hover::before { left: 0; }
+        .btn:hover {
+            color: var(--bg-dark);
+            box-shadow: 0 0 30px var(--neon-cyan);
+        }
+
+        .btn-pink {
+            border-color: var(--neon-pink);
+        }
+        .btn-pink::before { background: var(--neon-pink); }
+        .btn-pink:hover { box-shadow: 0 0 30px var(--neon-pink); }
+
+        /* ===== SECTION TITLE ===== */
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 60px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 20px var(--neon-cyan);
+            letter-spacing: 5px;
+        }
+
+        .section-title span { color: var(--neon-pink); }
+
+        /* ===== ABOUT ===== */
+        #about {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .about-content {
+            background: rgba(10, 10, 15, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            padding: 40px;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        /* ===== SKILLS ===== */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .skill-bubble {
+            background: rgba(10, 10, 15, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            padding: 25px 15px;
+            text-align: center;
+            transition: all 0.3s;
+            animation: float 3s ease-in-out infinite;
+            border-radius: 5px;
+        }
+
+        .skill-bubble:nth-child(even) { animation-delay: 0.5s; }
+        .skill-bubble:nth-child(3n) { animation-delay: 1s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .skill-bubble:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px var(--neon-cyan);
+            transform: translateY(-15px) scale(1.05);
+        }
+
+        .skill-bubble i {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .skill-bubble p {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        /* ===== PROJECTS ===== */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .project-card {
+            background: rgba(10, 10, 15, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            padding: 30px;
+            transition: all 0.3s;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            transform: scaleX(0);
+            transition: transform 0.3s;
+            transform-origin: left;
+        }
+
+        .project-card:hover::before { transform: scaleX(1); }
+
+        .project-card:hover {
+            border-color: var(--neon-pink);
+            box-shadow: 0 10px 30px rgba(255, 0, 255, 0.3);
+            transform: translateY(-10px);
+        }
+
+        .project-card h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-cyan);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .project-card p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: rgba(224, 224, 255, 0.8);
+        }
+
+        .project-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .project-tags span {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid var(--neon-cyan);
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            border-radius: 3px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .project-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .project-links a {
+            color: var(--neon-cyan);
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: color 0.3s;
+        }
+
+        .project-links a:hover { color: var(--neon-pink); }
+
+        /* ===== CONTACT ===== */
+        #contact {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .contact-icons {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .contact-icons a {
+            color: var(--text-light);
+            font-size: 2.5rem;
+            transition: all 0.3s;
+        }
+
+        .contact-icons a:hover {
+            color: var(--neon-cyan);
+            transform: translateY(-5px) scale(1.1);
+            text-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        /* ===== CHATBOT ===== */
+        .chatbot-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            border: none;
+            cursor: none;
+            z-index: 999;
+            box-shadow: 0 0 30px var(--neon-cyan);
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .chatbot-toggle:hover { transform: scale(1.1) rotate(15deg); }
+
+        .chatbot-panel {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 380px;
+            height: 500px;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            z-index: 998;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
+            overflow: hidden;
+        }
+
+        .chatbot-panel.active {
+            display: flex;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chatbot-header {
+            padding: 15px 20px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            color: var(--bg-dark);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-close {
+            background: none;
+            border: none;
+            color: var(--bg-dark);
+            font-size: 1.2rem;
+            cursor: none;
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chatbot-messages::-webkit-scrollbar { width: 5px; }
+        .chatbot-messages::-webkit-scrollbar-thumb { background: var(--neon-cyan); }
+
+        .message {
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            line-height: 1.4;
+            font-size: 0.95rem;
+        }
+
+        .message.user {
+            background: var(--neon-cyan);
+            color: var(--bg-dark);
+            align-self: flex-end;
+        }
+
+        .message.bot {
+            background: rgba(160, 32, 240, 0.3);
+            border: 1px solid var(--neon-purple);
+            align-self: flex-start;
+        }
+
+        .message.typing {
+            background: rgba(160, 32, 240, 0.2);
+            font-style: italic;
+            opacity: 0.7;
+        }
+
+        .chatbot-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid rgba(0, 255, 255, 0.3);
+            gap: 10px;
+        }
+
+        .chatbot-input input {
+            flex: 1;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid var(--neon-cyan);
+            color: var(--text-light);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: 'Rajdhani', sans-serif;
+            outline: none;
+        }
+
+        .chatbot-input button {
+            background: var(--neon-cyan);
+            color: var(--bg-dark);
+            border: none;
+            padding: 10px 20px;
+            cursor: none;
+            border-radius: 5px;
+            font-weight: 700;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            body { cursor: auto; }
+            .cursor { display: none; }
+            nav { padding: 15px 20px; }
+            .nav-links { gap: 15px; }
+            .nav-links a { font-size: 0.75rem; }
+            .hero-name { font-size: 3rem; }
+            .typing-text { font-size: 1.1rem; }
+            section { padding: 80px 20px; }
+            .section-title { font-size: 2rem; }
+            .chatbot-panel { width: 90%; right: 5%; }
+            .cta-buttons { flex-direction: column; width: 100%; }
+            .btn { text-align: center; }
+        }
+
+        /* ===== REDUCED MOTION ===== */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Custom Cursor -->
+    <div class="cursor" id="cursor"></div>
+    
+    <!-- Scanlines Overlay -->
+    <div class="scanlines"></div>
+    
+    <!-- Loading Screen -->
+    <div class="loader" id="loader">
+        <div class="loader-text">INITIALIZING</div>
+        <div class="loader-bar"></div>
+    </div>
+    
+    <!-- 3D Canvas -->
+    <canvas id="canvas3d"></canvas>
+    
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">HARISH.DEV</div>
+        <ul class="nav-links">
+            <li><a href="#hero">HOME</a></li>
+            <li><a href="#about">ABOUT</a></li>
+            <li><a href="#skills">SKILLS</a></li>
+            <li><a href="#projects">PROJECTS</a></li>
+            <li><a href="#contact">CONTACT</a></li>
+        </ul>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section id="hero">
+        <p class="hero-greeting">// HELLO WORLD</p>
+        <h1 class="hero-name">HARISH BABU</h1>
+        <p class="typing-text" id="typingText"></p>
+        <p class="hero-desc">
+            Crafting digital experiences with Python, building scalable web applications,
+            and exploring the boundaries of full-stack development. Welcome to my cyberpunk realm. 🚀
+        </p>
+        <div class="cta-buttons">
+            <a href="#projects" class="btn">VIEW PROJECTS</a>
+            <a href="#contact" class="btn btn-pink">CONTACT ME</a>
+        </div>
+    </section>
+    
+    <!-- About Section -->
+    <section id="about">
+        <h2 class="section-title">ABOUT <span>ME</span></h2>
+        <div class="about-content">
+            <p>
+                I'm <strong style="color: var(--neon-cyan);">Harish Babu</strong>, 
+                a passionate <strong>Python Full Stack Developer</strong> who loves turning 
+                complex problems into elegant solutions. With expertise spanning backend 
+                architectures and immersive frontend experiences, I build digital products 
+                that don't just work — they leave an impression.
+            </p>
+            <br>
+            <p>
+                When I'm not coding, you'll find me experimenting with 3D graphics, 
+                AI integrations, and building cool stuff like the portfolio you're 
+                exploring right now! 🎨✨
+            </p>
+        </div>
+    </section>
+    
+    <!-- Skills Section -->
+    <section id="skills">
+        <h2 class="section-title">TECH <span>STACK</span></h2>
+        <div class="skills-grid">
+            <div class="skill-bubble"><i class="devicon-python-plain colored"></i><p>Python</p></div>
+            <div class="skill-bubble"><i class="devicon-javascript-plain colored"></i><p>JavaScript</p></div>
+            <div class="skill-bubble"><i class="devicon-django-plain colored"></i><p>Django</p></div>
+            <div class="skill-bubble"><i class="devicon-fastapi-plain colored"></i><p>FastAPI</p></div>
+            <div class="skill-bubble"><i class="devicon-flask-original colored"></i><p>Flask</p></div>
+            <div class="skill-bubble"><i class="devicon-react-original colored"></i><p>React</p></div>
+            <div class="skill-bubble"><i class="devicon-html5-plain colored"></i><p>HTML5</p></div>
+            <div class="skill-bubble"><i class="devicon-css3-plain colored"></i><p>CSS3</p></div>
+            <div class="skill-bubble"><i class="devicon-postgresql-plain colored"></i><p>PostgreSQL</p></div>
+            <div class="skill-bubble"><i class="devicon-mongodb-plain colored"></i><p>MongoDB</p></div>
+            <div class="skill-bubble"><i class="devicon-docker-plain colored"></i><p>Docker</p></div>
+            <div class="skill-bubble"><i class="devicon-git-plain colored"></i><p>Git</p></div>
+        </div>
+    </section>
+    
+    <!-- Projects Section -->
+    <section id="projects">
+        <h2 class="section-title">MY <span>PROJECTS</span></h2>
+        <div class="projects-grid">
+            <div class="project-card">
+                <h3>🎨 3D Cyberpunk Portfolio</h3>
+                <p>This very website! Interactive 3D avatar, particle effects, infinite tunnel background, and AI chatbot.</p>
+                <div class="project-tags">
+                    <span>Three.js</span><span>JavaScript</span><span>Claude AI</span>
+                </div>
+                <div class="project-links">
+                    <a href="#" title="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="#" title="Live Demo"><i class="fas fa-external-link-alt"></i></a>
+                </div>
+            </div>
+            
+            <div class="project-card">
+                <h3>🤖 AI Chat Assistant</h3>
+                <p>FastAPI-powered backend integrating Claude AI with rate limiting, secure key management, and conversation history.</p>
+                <div class="project-tags">
+                    <span>Python</span><span>FastAPI</span><span>Anthropic</span>
+                </div>
+                <div class="project-links">
+                    <a href="#" title="GitHub"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+            
+            <div class="project-card">
+                <h3>📊 Data Analytics Dashboard</h3>
+                <p>Full-stack dashboard with real-time data visualization, user authentication, and PostgreSQL backend.</p>
+                <div class="project-tags">
+                    <span>Django</span><span>PostgreSQL</span><span>Chart.js</span>
+                </div>
+                <div class="project-links">
+                    <a href="#" title="GitHub"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Contact Section -->
+    <section id="contact">
+        <h2 class="section-title">GET IN <span>TOUCH</span></h2>
+        <p style="font-size: 1.2rem; margin-bottom: 20px;">
+            Open to opportunities, collaborations, and interesting conversations!
+        </p>
+        <div class="contact-icons">
+            <a href="mailto:harish@example.com" title="Email"><i class="fas fa-envelope"></i></a>
+            <a href="https://github.com/harish232" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+            <a href="#" target="_blank" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+            <a href="#" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+        </div>
+    </section>
+    
+    <!-- Chatbot Toggle Button -->
+    <button class="chatbot-toggle" id="chatbotToggle" title="Chat with AI">
+        <i class="fas fa-robot"></i>
+    </button>
+    
+    <!-- Chatbot Panel -->
+    <div class="chatbot-panel" id="chatbotPanel">
+        <div class="chatbot-header">
+            <span>🤖 ASK ABOUT HARISH</span>
+            <button class="chatbot-close" id="chatbotClose">✕</button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="message bot">
+                Hi! 👋 I'm Harish's AI assistant. Ask me anything about his skills, projects, or experience!
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatInput" placeholder="Type your message..." />
+            <button id="chatSend">SEND</button>
+        </div>
+    </div>
+    
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.128.0/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    
+    <!-- Main Script -->
+    <script src="script.js"></script>
+</body>
+</html>
